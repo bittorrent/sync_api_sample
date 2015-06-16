@@ -8,46 +8,25 @@ import sys
 
 SYNC_API_BASE_URL = 'http://localhost:8888/api/v2'
 
-# Update with path to folders
-SYNC_FOLDER_PATH = '/Users/kaelar/Desktop/Sync test'
-STATUS_FOLDER_PATH = '/Users/kaelar/Desktop/Status'
+# Update with folder share ids
+SYNC_FOLDER_SHARE_ID = ''
+STATUS_FOLDER_SHARE_ID = ''
 
 EVENTS_LIST = [
-    # 'EVENT_LOCAL_FILE_ADDED',
-    # 'EVENT_REMOTE_FILE_ADDED',
+    'EVENT_LOCAL_FILE_ADDED',
+    'EVENT_REMOTE_FILE_ADDED',
     'EVENT_LOCAL_FILE_REMOVED',
     'EVENT_REMOTE_FILE_REMOVED',
-    # 'EVENT_LOCAL_FILE_CHANGED',
-    # 'EVENT_REMOTE_FILE_CHANGED',
+    'EVENT_LOCAL_FILE_CHANGED',
+    'EVENT_REMOTE_FILE_CHANGED',
     'EVENT_FILE_DOWNLOAD_COMPLETED',
 ]
 
-def setup_folders():
-    res = requests.post('%s/folders?path=%s' % (SYNC_API_BASE_URL, SYNC_FOLDER_PATH))
-    if res.status_code != 201:
-        print 'Unable to add sync folder. Verify the path is correct and the folder ' \
-              'has not already been added.'
-        return
-    sync_folder_share_id = res.json().get('data').get('shareid')
-
-    res = requests.post('%s/folders?path=%s' % (SYNC_API_BASE_URL, STATUS_FOLDER_PATH))
-    if res.status_code != 201:
-        print 'Unable to add status folder. Verify the path is correct and the folder ' \
-              'has not already been added.'
-        return
-    status_folder_share_id = res.json().get('data').get('shareid')
-
-    data = {
-        'sync': sync_folder_share_id,
-        'status': status_folder_share_id
-    }
-    with open('%s/config.txt' % STATUS_FOLDER_PATH, 'w') as config_file:
-        config_file.write(json.dumps(data))
-        print 'Writing to config file >>> '
-
-
-def get_folder_path(folder):
-    res = requests.get('%s/folders/%s' % (SYNC_API_BASE_URL, folder))
+def get_folder_path(folder_id):
+    '''
+    Get path on disk of a folder based on folder id.
+    '''
+    res = requests.get('%s/folders/%s' % (SYNC_API_BASE_URL, folder_id))
     path = res.json().get('data').get('path')
 
     # Windows path wierdness, don't understand this yet...
@@ -58,9 +37,7 @@ def get_folder_path(folder):
 
 def find_folder_id(share_id):
     '''
-    find a folder id based on share id. Share id is a unique identifier for a folder.
-    Folder id is different across different users
-
+    Find a folder id based on share id.
     '''
     res = requests.get('%s/folders' % SYNC_API_BASE_URL)
     folders = res.json().get('data').get('folders')
@@ -71,10 +48,12 @@ def find_folder_id(share_id):
 
 
 def check_peer_status():
-    with open('%s/config.txt' % STATUS_FOLDER_PATH, 'r') as  config_file:
-        data = json.loads(config_file.read())
-        status_folder_id = find_folder_id(data.get('status'))
-        sync_folder_id = find_folder_id(data.get('sync'))
+    '''
+    Reads status files for each peer of a folder to check if that peer has the folder in
+    sync.
+    '''
+    status_folder_id = find_folder_id(STATUS_FOLDER_SHARE_ID)
+    sync_folder_id = find_folder_id(SYNC_FOLDER_SHARE_ID)
 
     # Get path of folder that contains peer status files
     status_folder_path = get_folder_path(status_folder_id)
@@ -115,15 +94,14 @@ def check_peer_status():
 
 
 def update_peer_status():
+    '''
+    Listens to events. When a folder event occurs, write out the peer's folder hash to
+    a text file in the status folder. The file name will be the peer id. Comparing the
+    folder hash across different peers lets us check if they are in sync.
+    '''
     last_event_id = -1
-
-    # Load config file that stores folder share ids. Use share id to find
-    # folder id
-    with open('%s/config.txt' % STATUS_FOLDER_PATH, 'r') as  config_file:
-        data = json.loads(config_file.read())
-        sync_folder_share_id = data.get('sync')
-        sync_folder_id = find_folder_id(sync_folder_share_id)
-        status_folder_id = find_folder_id(data.get('status'))
+    status_folder_id = find_folder_id(STATUS_FOLDER_SHARE_ID)
+    sync_folder_id = find_folder_id(SYNC_FOLDER_SHARE_ID)
 
     # Get path of folder that contains peer status files
     status_folder_path = get_folder_path(status_folder_id)
@@ -165,7 +143,7 @@ def update_peer_status():
                     share_id = event.get('folder').get('shareid')
 
                     # We only care about events for the folder that we want to keep in sync
-                    if share_id != sync_folder_share_id:
+                    if share_id != SYNC_FOLDER_SHARE_ID:
                         continue
 
                     write_peer_status(peer_id, peer_name, status_folder_path, sync_folder_id)
@@ -175,6 +153,9 @@ def update_peer_status():
 
 
 def write_peer_status(peer_id, peer_name, status_folder_path, sync_folder_id):
+    '''
+    Helper function to write out folder info to a text file in specified folder.
+    '''
     # Get hash of folder you want to keep in sync
     res = requests.get('%s/folders/%s/activity' % (SYNC_API_BASE_URL, sync_folder_id))
     _hash = res.json().get('data').get('hash')
@@ -194,8 +175,6 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         print 'Error, missing arguments'
         sys.exit()
-    if sys.argv[1] == '--setup':
-        setup_folders()
     elif sys.argv[1] == '--peer':
         update_peer_status()
     else:

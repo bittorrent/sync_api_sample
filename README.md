@@ -63,6 +63,7 @@ You should get a response in the following format:
     "relay": true,
     "searchdht": false,
     "searchlan": true,
+    "shareid": "12345asdf12354",
     "stopped": false,
     "synclevel": 2,
     "synclevelname":
@@ -79,7 +80,7 @@ You should get a response in the following format:
 Now we have added a folder to sync. If you open the client, you should see the folder show up. You can also check what folders you have using the api.
 
 ```sh
-$ curl -X GET -H http://localhost:8888/api/v2/folders
+$ curl -X GET http://localhost:8888/api/v2/folders
 ```
 
 Response:
@@ -99,6 +100,7 @@ Response:
         "relay": true,
         "searchdht": false,
         "searchlan": true,
+        "shareid": "12345asdf12354",
         "stopped": false,
         "synclevel": 2,
         "synclevelname": "full sync",
@@ -139,4 +141,83 @@ Response:
 
 Send the link to another device or a friend that is using Sync and you are on your way to syncing a folder.
 
+# Sample Application
+Suppose we have a fire station with x number of fire trucks. The fire station will share a folder with all the fire trucks that will contain information to help them stay up to date. The fire station wants to constantly know if each fire truck is in sync and has recieved the new files in the folder. This sample application will help us accomplish this scenario.
+
+### Setup folders
+The BitTorrent Sync client needs to be installed on all systems (fire station and fire trucks). Using the BitTorrent Sync client on the main client (fire station) , add the folder you want to keep in sync. We will call this the Sync folder. Also, we need to add a second folder. This folder can be located anywhere and we will call it the Status folder. We now need to share these folders with all the peers (fire trucks). The Sync folder can be read only. The Status folder needs to have read/write permissions.
+
+The Status folder is needed to keep the hash state of the Sync folder for each peer. We use this folder hash to check if a folder is in sync. We do this because we assume fire trucks will be driving around and in and out of connectivity and may not always be able to communicate directly with the main client. Storing the most recent state of each peer in this Status folder will allow the main client to always have access to the latest state of each peer.
+
+### Getting folder share id
+We need to get the folder share id for the Sync and Status folders
+```sh
+$ curl -X GET http://localhost:8888/api/v2/folders
+```
+```json
+{
+  "data": {
+    "folders": [
+      {
+        "date_added": 1432923595,
+        "deletetotrash": true,
+        "id": "123",
+        "ismanaged": true,
+        "iswritable": true,
+        "name": "Sync",
+        "path": "/Users/me/Desktop/Sync",
+        "paused": false,
+        "relay": true,
+        "searchdht": false,
+        "searchlan": true,
+        "shareid": "12345asdf12354",
+        "stopped": false,
+        "synclevel": 2,
+        "synclevelname": "full sync",
+        "usehosts": false,
+        "usetracker": true
+      },
+      {
+        "date_added": 1432923595,
+        "deletetotrash": true,
+        "id": "124",
+        "ismanaged": true,
+        "iswritable": true,
+        "name": "Status",
+        "path": "/Users/me/Desktop/Status",
+        "paused": false,
+        "relay": true,
+        "searchdht": false,
+        "searchlan": true,
+        "shareid": "12345asdf12354a",
+        "stopped": false,
+        "synclevel": 2,
+        "synclevelname": "full sync",
+        "usehosts": false,
+        "usetracker": true
+      },      
+    ]
+  },
+  "method": "GET",
+  "path": "/api/v2/folders",
+  "status": 0
+}
+```
+Get the shareid for the Sync and Status folders and copy them into the sync_api_sample/helper.py file into the variables SYNC_FOLDER_SHARE_ID and STATUS_FOLDER_SHARE_ID.
+
+### Setup peers
+Along with having BitTorrent Sync installed, each peer(fire truck) needs to run a helper script located at sync_api_sample/helper.py.
+```sh
+$ python sync_api_sample/helper.py --peer
+```
+This runs a script that will listen to BitTorrent Sync events, and on specific folder change events, will update the Status folder with an updated text file containing its current hash of the Sync folder along with some other information. It will name the file based on its peer id.
+
+### Setup main client
+The main client (fire station) needs to run the following
+```sh
+$ sudo python runserver.py
+```
+Now open your webbrowser and go to 'http://127.0.0.1/'. There you should see a Sync Dashboard that displays the sync state of each peer. It gets this information by pulling the peer text files in the Status folder and checking the hash value in those files and comparing them with its current hash value on the Sync Folder.
+
+![Sync Dashboard](https://github.com/bittorrent/sync_api_sample/blob/master/Dashboard%20Sample.png)
 

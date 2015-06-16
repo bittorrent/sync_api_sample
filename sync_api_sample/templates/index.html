@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Device Name</th>
+      <th>Device Id</th>
+      <th>Last Updated</th>
+      <th>Online</th>
+      <th>Synced</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for d in data %}
+    <tr>
+      <td>{{d.name}}</td>
+      <td>{{d.peer_id}}</td>
+      <td>{{d.last_modified}}</td>
+
+      {% if d.is_online == 1 %}
+        <td><i class="fa fa-lg fa-check green"></i></td>
+      {% elif d.is_online == 0 %}
+        <td><i class="fa fa-lg fa-times red"></i></td>
+      {% else %}
+        <td><i class="fa fa-lg fa-question orange"></i></td>
+      {% endif %}
+
+      {% if d.sync == 1 %}
+        <td><i class="fa fa-lg fa-check green"></i></td>
+      {% elif d.sync == 0 %}
+        <td><i class="fa fa-lg fa-times red"></i></td>
+      {% else %}
+        <td><i class="fa fa-lg fa-question orange"></i></td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<div class="margin-left-30">
+  <a class="btn btn-primary" href="/" role="button">Refresh</a>
+</div>
+{% endblock content %}

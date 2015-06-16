@@ -1,0 +1,13 @@
+{
+  "name": "sync-sample",
+  "version": "0.0.1",
+  "homepage": "https://github.com/bittorrent/sync-sample",
+  "authors": [
+    "Jeffrey Hwang <jhwang@bittorrent.com>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "bootstrap": "~3.3.4"
+  }
+}

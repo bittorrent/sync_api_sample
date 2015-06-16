@@ -1,0 +1,28 @@
+/* Correct for fixed top bar */
+body {
+	padding-top: 70px;
+}
+
+.table th {
+   text-align: center;
+}
+
+.table tr {
+   text-align: center;
+}
+
+.green {
+	color: green;
+}
+
+.red {
+	color: red;
+}
+
+.orange {
+	color: orange;
+}
+
+.margin-left-30 {
+	margin-left: 30px;
+}

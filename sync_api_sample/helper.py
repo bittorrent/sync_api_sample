@@ -123,17 +123,15 @@ def update_peer_status():
             res = requests.get('%s/events?id=%s' % (SYNC_API_BASE_URL, last_event_id))
             events = res.json().get('data').get('events')
 
+            # Store last event id
+            last_event_id = res.json().get('data').get('id')
+
             # Sort events by id. We want lowest id (earliest) events first so they process first
             # By default we are returned highest id (most current) events
             sorted_events = sorted(events, key=lambda k: k['id'], reverse=False)
 
             for event in sorted_events:
                 event_type = event.get('typename')
-                event_id = event.get('id')
-
-                # Set highest event id (most recent event) to last_event_id so we don't get duplicates
-                if event_id > last_event_id:
-                    last_event_id = event_id
 
                 # We only care about folder events where the state changes
                 if event_type not in EVENTS_LIST:

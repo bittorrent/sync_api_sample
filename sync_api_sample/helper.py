@@ -24,27 +24,15 @@ EVENTS_LIST = [
 
 def get_folder_path(folder_id):
     '''
-    Get path on disk of a folder based on folder id.
+    Get path on disk of a folder based on folder id/folder share id.
     '''
     res = requests.get('%s/folders/%s' % (SYNC_API_BASE_URL, folder_id))
     path = res.json().get('data').get('path')
 
-    # Windows path wierdness, don't understand this yet...
+    # Windows path
     if path.startswith('\\\\?\\'):
         path = path[4:]
     return path
-
-
-def find_folder_id(share_id):
-    '''
-    Find a folder id based on share id.
-    '''
-    res = requests.get('%s/folders' % SYNC_API_BASE_URL)
-    folders = res.json().get('data').get('folders')
-    for folder in folders:
-        if folder.get('shareid') == share_id:
-            return folder.get('id')
-    return None
 
 
 def check_peer_status():
@@ -52,14 +40,11 @@ def check_peer_status():
     Reads status files for each peer of a folder to check if that peer has the folder in
     sync.
     '''
-    status_folder_id = find_folder_id(STATUS_FOLDER_SHARE_ID)
-    sync_folder_id = find_folder_id(SYNC_FOLDER_SHARE_ID)
-
     # Get path of folder that contains peer status files
-    status_folder_path = get_folder_path(status_folder_id)
+    status_folder_path = get_folder_path(STATUS_FOLDER_SHARE_ID)
 
     # Get folder hash of the folder you want to keep in sync
-    res = requests.get('%s/folders/%s/activity' % (SYNC_API_BASE_URL, sync_folder_id))
+    res = requests.get('%s/folders/%s/activity' % (SYNC_API_BASE_URL, SYNC_FOLDER_SHARE_ID))
     client_hash = res.json().get('data').get('hash')
 
     # Get peers of folder so we can check if they are in sync
@@ -100,11 +85,9 @@ def update_peer_status():
     folder hash across different peers lets us check if they are in sync.
     '''
     last_event_id = -1
-    status_folder_id = find_folder_id(STATUS_FOLDER_SHARE_ID)
-    sync_folder_id = find_folder_id(SYNC_FOLDER_SHARE_ID)
 
     # Get path of folder that contains peer status files
-    status_folder_path = get_folder_path(status_folder_id)
+    status_folder_path = get_folder_path(STATUS_FOLDER_SHARE_ID)
 
     # Get peer id
     res = requests.get('%s/client' % SYNC_API_BASE_URL)
@@ -115,7 +98,7 @@ def update_peer_status():
     peer_name = res.json().get('data').get('devicename')
 
     # Should update status once on start
-    write_peer_status(peer_id, peer_name, status_folder_path, sync_folder_id)
+    write_peer_status(peer_id, peer_name, status_folder_path, SYNC_FOLDER_SHARE_ID)
 
     while True:
         try:
@@ -144,10 +127,9 @@ def update_peer_status():
                     if share_id != SYNC_FOLDER_SHARE_ID:
                         continue
 
-                    write_peer_status(peer_id, peer_name, status_folder_path, sync_folder_id)
+                    write_peer_status(peer_id, peer_name, status_folder_path, SYNC_FOLDER_SHARE_ID)
         except Exception as e:
             print 'Error %s' % e
-            # pass
 
 
 def write_peer_status(peer_id, peer_name, status_folder_path, sync_folder_id):

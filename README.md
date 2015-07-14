@@ -1,34 +1,10 @@
 # BitTorrent Sync API v2 Tutorial
 
-### Install BitTorrent Sync
-Install a version of BitTorrent Sync that includes API v2 support. You can get it [HERE] ...blahblah
-
-### Request API Key
-Contact BitTorrent support to request an API key. [HERE] .....blahblah
-
-### Create configuration file
-Create a file named sync.conf and copy the code below. Place it in the following folder.
-
-OSX: ~/Library/Application Support/BitTorrent Sync/sync.conf
-
-Windows: C:\Users\username\AppData\Roaming\BitTorrent Sync\sync.conf
-```
-sync.conf
-{
-  "device_name": "My Sync System",
-  "use_gui": true,
-  "pid_file": "sync.pid",
-  "webui": {
-    "api_key": [YOUR_API_KEY],
-     "listen": "0.0.0.0:8888"
-  }
-}
-```
-
-Start up BitTorrent Sync client and you are ready to go.
+### Getting Started
+For instructions on installing BitTorrent Sync, requesting an API key, and everything else you need to get you up and running, click [here](http://www.getsync.com/api/getting-started).
 
 ### API commands
-Lets test some API commands. First, we can add a local folder to sync. There are multiple ways you can pass in data. For the examples, I will be adding a folder of books I want to share.
+Once you have BitTorrent Sync up and running, we can now test some API commands. First, we can add a local folder to sync. There are multiple ways you can pass in data. For the examples, I will be adding a folder of books I want to share.
 ```
 POST /folders
 ```
